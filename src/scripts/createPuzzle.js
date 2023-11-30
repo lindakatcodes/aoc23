@@ -11,7 +11,7 @@ const dayFile = `./src/2023/puzzles/day${paddedDay}.js`;
 const inputFile = `./src/2023/inputs/day${paddedDay}Input.txt`;
 // store the string I want to be written by default to the file
 const template = `
-  import * as h from "../helpers";
+  import * as h from "../../scripts/helpers";
   ${needsInput && `const initData = await h.readData("${inputFile}");`}
 `;
 // write the string to the file
