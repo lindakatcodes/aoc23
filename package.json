@@ -2,10 +2,10 @@
   "name": "aoc-2023",
   "version": "0.0.1",
   "author": "Linda Thompson",
-  "main": "server.js",
+  "type": "module",
   "scripts": {
-    "start": "node server.js --watch -- --day=%npm_config_day%",
-    "daygen": "node src/scripts/createPuzzle"
+    "start": "node --watch \"src/2023/puzzles/day%npm_config_dayNum%.js\"",
+    "daygen": "node src/scripts/createPuzzle.js"
   },
   "dependencies": {
     "prompt-sync": "^4.2.0"
