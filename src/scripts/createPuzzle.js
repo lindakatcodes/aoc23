@@ -13,6 +13,10 @@ const inputFile = `./src/2023/inputs/day${paddedDay}Input.txt`;
 const template = `
   import * as h from "../../scripts/helpers";
   ${needsInput && `const initData = await h.readData("${inputFile}");`}
+
+  if (import.meta.vitest) {
+    const { it, expect } = import.meta.vitest;
+  }
 `;
 // write the string to the file
 (async () => {

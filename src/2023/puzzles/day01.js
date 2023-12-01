@@ -3,5 +3,9 @@ const initData = await h.readData("./src/2023/inputs/day01Input.txt");
 
 console.log(initData);
 
-console.log("hello from day 1");
-console.log(2 + 3);
+if (import.meta.vitest) {
+  const { it, expect } = import.meta.vitest;
+  it("test in file", () => {
+    expect(1 + 2).toBe(3);
+  });
+}
