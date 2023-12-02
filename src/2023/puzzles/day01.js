@@ -20,10 +20,19 @@ function getCalibrationValueDigits(val) {
   return Number(combined);
 }
 
+// gotta get funky here - we use exec to check for the next digit match, store that value, then check the last letter of the current match to see if it could be the start of a new number. If so, we move the lastIndex value back 1 so it properly gets all the numbers. then we just grab the first and last values from our array of all numbers to find the combined value
 function getCalibrationValueMixed(val) {
   const possibleDigits = /[0-9]|one|two|three|four|five|six|seven|eight|nine/g;
-  const allValues = val.match(possibleDigits);
-
+  const allValues = [];
+  let tempValues;
+  while ((tempValues = possibleDigits.exec(val)) !== null) {
+    allValues.push(tempValues[0]);
+    const letters = /[otfsenOTFSEN]/;
+    const nextChar = val.charAt(possibleDigits.lastIndex - 1);
+    if (letters.test(nextChar)) {
+      possibleDigits.lastIndex = possibleDigits.lastIndex - 1;
+    }
+  }
   // have to separately convert these since they could be text
   const first = digits.get(allValues[0]) || allValues[0];
   const last =
