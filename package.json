@@ -8,9 +8,6 @@
     "daygen": "node src/scripts/createPuzzle.js",
     "test": "vitest"
   },
-  "dependencies": {
-    "prompt-sync": "^4.2.0"
-  },
   "devDependencies": {
     "vitest": "^0.34.6"
   }

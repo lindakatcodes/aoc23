@@ -1,8 +1,11 @@
-const prompt = require("prompt-sync")({ sigint: true });
-const { writeFile } = require("fs/promises");
+import { writeFile } from "fs/promises";
 
-const day = Number(prompt("What day is it: "));
-const needsInput = Boolean(prompt("Do you need an input file? "));
+const day = Number(process.argv[2]);
+const needsInput = Boolean(process.argv[3]) || false;
+
+if (!day) {
+  throw new Error("Day number is required to generate files.");
+}
 
 //  make the file name with the day
 const paddedDay = day < 10 ? `0${day}` : day;
@@ -11,11 +14,11 @@ const dayFile = `./src/2023/puzzles/day${paddedDay}.js`;
 const inputFile = `./src/2023/inputs/day${paddedDay}Input.txt`;
 // store the string I want to be written by default to the file
 const template = `
-  import * as h from "../../scripts/helpers";
+  import * as h from "../../scripts/helpers.js";
   ${needsInput && `const initData = await h.readData("${inputFile}");`}
 
   if (import.meta.vitest) {
-    const { it, expect } = import.meta.vitest;
+    const { describe, it, expect } = import.meta.vitest;
   }
 `;
 // write the string to the file

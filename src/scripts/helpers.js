@@ -7,3 +7,9 @@ export async function readData(file) {
     console.log(err);
   }
 }
+
+export function sumNumberArray(numArr) {
+  return numArr.reduce((first, second) => {
+    return first + second;
+  }, 0);
+}
