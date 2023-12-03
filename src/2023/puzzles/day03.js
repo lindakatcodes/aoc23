@@ -1,73 +1,104 @@
 import * as h from "../../scripts/helpers.js";
 const initData = await h.readData("./src/2023/inputs/day03Input.txt");
-const parsedData = initData.split("\n");
-const symbols = "*/%-=@#+$&";
-const regex = /\D/g;
+const symbolRegex = /[^\.\d]/;
+const starRegex = /\*/;
 
-function getLineNumbers(line, prevLine, nextLine) {
-  const validNumbers = [];
-  const possibleNumbers = line.split(regex).filter((spot) => spot !== "");
-  // console.log({ possibleNumbers });
-  let numStart = 0;
-  let numEnd = 0;
-  possibleNumbers.forEach((num) => {
-    const numLen = num.length;
-    numStart =
-      line.indexOf(num, numStart) === 0 ? 0 : line.indexOf(num, numStart);
-    numEnd =
-      numStart + numLen - 1 > line.length - 1
-        ? line.length - 1
-        : numStart + numLen - 1;
+// returns the input (already split into lines) split into a 2d array of characters
+function createSchematicGrid(input) {
+  return input.map((line) => line.split(""));
+}
 
-    // adjustments to account for before and after the actual number (diagonal)
-    if (numStart !== 0) {
-      numStart = numStart - 1;
-    }
-    if (numEnd !== line.length - 1) {
-      numEnd = numEnd + 1;
-    }
-    // console.log({ numLen, numStart, numEnd, num });
+// returns an array of all valid part numbers as numbers, with indexes and if it touches a star
+function findPartNumbers(inArr) {
+  const valid = [];
 
-    let symbolFound = false;
-    const prevSeg =
-      (prevLine !== null &&
-        prevLine
-          .slice(numStart, numEnd + 1)
-          .split(".")
-          .filter((spot) => spot !== "")) ||
-      [];
-    const nextSeg =
-      (nextLine !== null &&
-        nextLine
-          .slice(numStart, numEnd + 1)
-          .split(".")
-          .filter((spot) => spot !== "")) ||
-      [];
-    const sameSeg = [line.charAt(numStart), line.charAt(numEnd)]
-      .filter((spot) => spot !== ".")
-      .filter((spot) => spot !== "")
-      .filter((spot) => symbols.includes(spot));
-    // console.log({ prevSeg, nextSeg, sameSeg });
-    if (prevSeg.length || nextSeg.length || sameSeg.length) {
-      validNumbers.push(Number(num));
-    }
+  inArr.forEach((line, lineIndex) => {
+    let inGroup = false;
+    let isValid = false;
+    let touchesStar = false;
+    let starIndex = null;
+    let currNum = [];
+    line.forEach((char, index) => {
+      const isDigit = /\d/.test(char);
+      if (isDigit) {
+        if (!inGroup) {
+          inGroup = true;
+        }
+        const prevRow = inArr[lineIndex - 1];
+        const nextRow = inArr[lineIndex + 1];
+        // check digit's validity
+        const nearby = [
+          (prevRow && prevRow[index - 1]) || ".",
+          (prevRow && prevRow[index]) || ".",
+          (prevRow && prevRow[index + 1]) || ".",
+          line[index - 1] || ".",
+          line[index + 1] || ".",
+          (nextRow && nextRow[index - 1]) || ".",
+          (nextRow && nextRow[index]) || ".",
+          (nextRow && nextRow[index + 1]) || ".",
+        ].join("");
+        const charIsValid = symbolRegex.test(nearby);
+        if (charIsValid) {
+          isValid = true;
+          if (starRegex.test(nearby)) {
+            touchesStar = true;
+            // console.log({ nearby });
+            const nearStar = nearby.split("").indexOf("*");
+            // console.log({ nearStar, char });
+            if ([0, 3, 5].includes(nearStar)) {
+              starIndex = index - 1;
+            } else if ([2, 4, 7].includes(nearStar)) {
+              starIndex = index + 1;
+            } else {
+              starIndex = index;
+            }
+          }
+        }
+        currNum.push(char);
+      }
+      if ((!isDigit && inGroup) || index === line.length - 1) {
+        // send result if valid
+        if (isValid) {
+          valid.push({
+            num: Number(currNum.join("")),
+            possibleGear: touchesStar,
+            starpoint: starIndex,
+            line: lineIndex,
+          });
+        }
+        // reset values for next number
+        inGroup = false;
+        isValid = false;
+        touchesStar = false;
+        starIndex = null;
+        currNum = [];
+      }
+    });
   });
-  // console.log({ validNumbers });
-  return validNumbers;
+  return valid;
+}
+
+// returns all gear ratios as an array
+function calcGearRatios(inArr) {
+  const ratios = [];
+
+  return ratios;
 }
 
 // part 1
-const partNumbers1 = [];
-parsedData.map((line, index) => {
-  const prevLine = parsedData[index - 1] || null;
-  const nextLine = parsedData[index + 1] || null;
-  const lineNumbers = getLineNumbers(line, prevLine, nextLine);
-  lineNumbers.forEach((num) => partNumbers1.push(num));
-});
-const partNumSum = h.sumNumberArray(partNumbers1);
-console.log({ part1: partNumSum });
-// part 2
+const parsedData = initData.split("\n");
+const schematic = createSchematicGrid(parsedData);
+const validParts = findPartNumbers(schematic);
+const partNumbers = validParts.map((part) => part.num);
+const validSum = h.sumNumberArray(partNumbers);
+console.log({ part1: validSum });
 
+// part 2
+// const validGearRatios = calcGearRatios(schematic);
+// const ratioSum = h.sumNumberArray(validGearRatios);
+// console.log({ part2: ratioSum });
+
+// tests
 if (import.meta.vitest) {
   const { describe, it, expect } = import.meta.vitest;
 
@@ -83,19 +114,18 @@ if (import.meta.vitest) {
     "...$.*....",
     ".664.598..",
   ];
-
-  const knownPartNumbers = [467, 35, 633, 617, 592, 755, 664, 598];
-  const knownSum = 4361;
-  const partNumbers = [];
+  let fullPartList = [];
 
   describe("part 1", () => {
+    const knownPartNumbers = [467, 35, 633, 617, 592, 755, 664, 598];
+    const knownSum = 4361;
+    let partNumbers = [];
     it("gets the right part numbers", () => {
-      sample1.map((line, index) => {
-        const prevLine = sample1[index - 1] || null;
-        const nextLine = sample1[index + 1] || null;
-        const lineNumbers = getLineNumbers(line, prevLine, nextLine);
-        lineNumbers.forEach((num) => partNumbers.push(num));
-      });
+      const schematic = createSchematicGrid(sample1);
+      fullPartList = findPartNumbers(schematic);
+      console.log({ fullPartList });
+      partNumbers = fullPartList.map((part) => part.num);
+      console.log({ partNumbers });
       expect(partNumbers).toEqual(knownPartNumbers);
     });
 
@@ -103,5 +133,35 @@ if (import.meta.vitest) {
       const sum = h.sumNumberArray(partNumbers);
       expect(sum).toEqual(knownSum);
     });
+
+    it("catches similar numbers", () => {
+      const sample1b = [
+        "1-......",
+        "........",
+        "......-1",
+        "........",
+        ".24..4..",
+        "......*4",
+      ];
+      const schematic = createSchematicGrid(sample1b);
+      const partNums2 = findPartNumbers(schematic);
+      const justNums = partNums2.map((part) => part.num);
+      console.log({ justNums });
+      expect(justNums).toEqual([1, 1, 4, 4]);
+    });
+  });
+
+  describe("part 2", () => {
+    const knownGearRatios = [16345, 451490];
+    const knownTotal = 467835;
+
+    it("gets the right gear numbers", () => {
+      const ratios = calcGearRatios(fullPartList);
+    });
+
+    // it("gets the right sum from the gear ratios", () => {
+    //   const sum = h.sumNumberArray(knownGearRatios);
+    //   expect(sum).toEqual(knownTotal);
+    // });
   });
 }
