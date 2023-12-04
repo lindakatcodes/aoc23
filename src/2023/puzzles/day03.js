@@ -42,9 +42,7 @@ function findPartNumbers(inArr) {
           isValid = true;
           if (starRegex.test(nearby)) {
             touchesStar = true;
-            // console.log({ nearby });
             const nearStar = nearby.split("").indexOf("*");
-            // console.log({ nearStar, char });
             if ([0, 3, 5].includes(nearStar)) {
               starIndex = index - 1;
             } else if ([2, 4, 7].includes(nearStar)) {
@@ -56,8 +54,25 @@ function findPartNumbers(inArr) {
         }
         currNum.push(char);
       }
-      if ((!isDigit && inGroup) || index === line.length - 1) {
+      if (!isDigit && inGroup) {
         // send result if valid
+        if (isValid) {
+          valid.push({
+            num: Number(currNum.join("")),
+            possibleGear: touchesStar,
+            starpoint: starIndex,
+            line: lineIndex,
+          });
+        }
+        // reset values for next number
+        inGroup = false;
+        isValid = false;
+        touchesStar = false;
+        starIndex = null;
+        currNum = [];
+      }
+
+      if (index === line.length - 1) {
         if (isValid) {
           valid.push({
             num: Number(currNum.join("")),
@@ -79,8 +94,42 @@ function findPartNumbers(inArr) {
 }
 
 // returns all gear ratios as an array
-function calcGearRatios(inArr) {
+function calcGearRatios(partlist, fullArr) {
   const ratios = [];
+  const possibleGears = partlist.filter((part) => part.possibleGear);
+  // console.log({ possibleGears });
+  const stars = fullArr
+    .map((line, lineIndex) => {
+      const indices = [];
+      let idx = line.indexOf("*");
+      while (idx !== -1) {
+        indices.push(idx);
+        idx = line.indexOf("*", idx + 1);
+      }
+      return {
+        starline: lineIndex,
+        starspots: indices,
+      };
+    })
+    .filter((star) => star.starspots.length > 0);
+  // console.log({ stars });
+
+  stars.map((line) => {
+    const nearbyLines = possibleGears.filter((part) =>
+      [line.starline - 1, line.starline + 1, line.starline].includes(part.line)
+    );
+    // console.log({ nearbyLines });
+    line.starspots.forEach((star) => {
+      const touchingParts = nearbyLines.filter(
+        (part) => part.starpoint === star
+      );
+      // console.log({ touchingParts });
+      if (touchingParts.length === 2) {
+        const ratio = touchingParts[0].num * touchingParts[1].num;
+        ratios.push(ratio);
+      }
+    });
+  });
 
   return ratios;
 }
@@ -94,9 +143,9 @@ const validSum = h.sumNumberArray(partNumbers);
 console.log({ part1: validSum });
 
 // part 2
-// const validGearRatios = calcGearRatios(schematic);
-// const ratioSum = h.sumNumberArray(validGearRatios);
-// console.log({ part2: ratioSum });
+const validGearRatios = calcGearRatios(validParts, schematic);
+const ratioSum = h.sumNumberArray(validGearRatios);
+console.log({ part2: ratioSum });
 
 // tests
 if (import.meta.vitest) {
@@ -123,9 +172,8 @@ if (import.meta.vitest) {
     it("gets the right part numbers", () => {
       const schematic = createSchematicGrid(sample1);
       fullPartList = findPartNumbers(schematic);
-      console.log({ fullPartList });
+      // console.log({ fullPartList });
       partNumbers = fullPartList.map((part) => part.num);
-      console.log({ partNumbers });
       expect(partNumbers).toEqual(knownPartNumbers);
     });
 
@@ -145,8 +193,8 @@ if (import.meta.vitest) {
       ];
       const schematic = createSchematicGrid(sample1b);
       const partNums2 = findPartNumbers(schematic);
+      // console.log({ partNums2 });
       const justNums = partNums2.map((part) => part.num);
-      console.log({ justNums });
       expect(justNums).toEqual([1, 1, 4, 4]);
     });
   });
@@ -156,12 +204,15 @@ if (import.meta.vitest) {
     const knownTotal = 467835;
 
     it("gets the right gear numbers", () => {
-      const ratios = calcGearRatios(fullPartList);
+      const schematic = createSchematicGrid(sample1);
+      const ratios = calcGearRatios(fullPartList, schematic);
+      // console.log({ ratios });
+      expect(ratios).toEqual(knownGearRatios);
     });
 
-    // it("gets the right sum from the gear ratios", () => {
-    //   const sum = h.sumNumberArray(knownGearRatios);
-    //   expect(sum).toEqual(knownTotal);
-    // });
+    it("gets the right sum from the gear ratios", () => {
+      const sum = h.sumNumberArray(knownGearRatios);
+      expect(sum).toEqual(knownTotal);
+    });
   });
 }
