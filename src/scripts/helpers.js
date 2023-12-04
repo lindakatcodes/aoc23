@@ -13,3 +13,11 @@ export function sumNumberArray(numArr) {
     return first + second;
   }, 0);
 }
+
+export function createCountObject(keys, startVal) {
+  const countObj = new Object();
+  for (let i = 0; i < keys.length; i++) {
+    countObj[keys[i]] = startVal;
+  }
+  return countObj;
+}
