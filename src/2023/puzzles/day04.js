@@ -30,6 +30,7 @@ function calcMatchesTotal(matchArray) {
   return total;
 }
 
+// return object with counts for cards
 function countCardTotals(cardlist) {
   const totalInitCards = cardlist.length;
   const cardKeysArray = Array.from(Array(totalInitCards).keys()).map(
@@ -37,18 +38,18 @@ function countCardTotals(cardlist) {
   );
   const countList = h.createCountObject(cardKeysArray, 1);
 
-  for (const card of cardlist) {
-    const [name, _] = card.split(": ");
-    const cardNum = name.split(" ")[1];
-    const matches = findWinningMatches(card);
+  cardlist.forEach((card, index) => {
+    const name = index + 1;
+    const matches = card.length;
+    const rounds = countList[name];
 
-    for (let a = countList[cardNum]; a > 0; a--) {
-      for (let i = 1; i <= matches.length; i++) {
-        const valToInc = Number(cardNum) + i;
-        countList[valToInc] += 1;
+    for (let a = 0; a < rounds; a++) {
+      for (let i = 0; i < matches; i++) {
+        const nextCard = name + i + 1;
+        countList[nextCard] += 1;
       }
     }
-  }
+  });
 
   return countList;
 }
@@ -63,15 +64,13 @@ function calcCardCount(totalObj) {
 
 // part 1
 const allCards = initData.split("\n");
-const cardValues = allCards
-  .map((card) => findWinningMatches(card))
-  .map((matchset) => calcMatchesTotal(matchset));
-// console.log({ cardValues });
+const cardWinnings = allCards.map((card) => findWinningMatches(card));
+const cardValues = cardWinnings.map((matchset) => calcMatchesTotal(matchset));
 const cardTotal = h.sumNumberArray(cardValues);
 console.log({ part1: cardTotal });
 
 // part 2
-const cardCounts = countCardTotals(allCards);
+const cardCounts = countCardTotals(cardWinnings);
 // console.log({ cardCounts });
 const totalCardCount = calcCardCount(cardCounts);
 console.log({ part2: totalCardCount });
@@ -123,8 +122,8 @@ if (import.meta.vitest) {
     let sampleCardCounts;
 
     it("counts the right number of cards", () => {
-      sampleCardCounts = countCardTotals(sample);
-      console.log({ sampleCardCounts });
+      const sampleWinnings = sample.map((card) => findWinningMatches(card));
+      sampleCardCounts = countCardTotals(sampleWinnings);
       expect(sampleCardCounts).toEqual(knownCardCounts);
     });
 
