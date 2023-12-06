@@ -19,6 +19,11 @@ const template = `
 
   if (import.meta.vitest) {
     const { describe, it, expect } = import.meta.vitest;
+
+    const sample = [];
+
+    describe('part 1', () => {});
+    describe('part 2', () => {});
   }
 `;
 // write the string to the file

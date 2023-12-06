@@ -4,9 +4,9 @@
   "author": "Linda Thompson",
   "type": "module",
   "scripts": {
-    "start": "node --watch \"src/2023/puzzles/day%npm_config_dayNum%.js\"",
+    "start": "node --watch \"src/2023/puzzles/day%npm_config_daynum%.js\"",
     "daygen": "node src/scripts/createPuzzle.js",
-    "test": "vitest day%npm_config_dayNum%",
+    "test": "vitest day%npm_config_daynum%",
     "test:all": "vitest run"
   },
   "devDependencies": {
