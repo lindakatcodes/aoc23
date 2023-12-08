@@ -17,6 +17,13 @@ const template = `
   import * as h from "../../scripts/helpers.js";
   ${needsInput && `const initData = await h.readData("${inputFile}");`}
 
+  // functions
+
+  // part 1
+
+  // part 2
+
+  // tests
   if (import.meta.vitest) {
     const { describe, it, expect } = import.meta.vitest;
 
