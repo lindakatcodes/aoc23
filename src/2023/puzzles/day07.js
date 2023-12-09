@@ -1,19 +1,32 @@
 import * as h from "../../scripts/helpers.js";
 const initData = await h.readData("./src/2023/inputs/day07Input.txt");
 const CARDS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+const CARDSJOKER = [
+  "A",
+  "K",
+  "Q",
+  "T",
+  "9",
+  "8",
+  "7",
+  "6",
+  "5",
+  "4",
+  "3",
+  "2",
+  "J",
+];
 const TYPES = ["High", "One", "Two", "Three", "Full", "Four", "Five"];
-// [23456789TJQKA]
 
 // functions
 // parse a hand string into a type
 function handType(hand) {
-  let type = "";
+  let type = "High";
   const cardcount = h.getUniqueKeyCounts(hand.split(""));
-  // console.log({ cardcount });
 
-  for (let i = 0; i < TYPES.length; i++) {
+  // start at 1 because we don't really need to loop over 'High', since that's the default case
+  for (let i = 1; i < TYPES.length; i++) {
     const label = TYPES[i];
-    // console.log({ label });
 
     switch (label) {
       case "One": {
@@ -40,7 +53,7 @@ function handType(hand) {
       case "Full": {
         const pair = Object.values(cardcount).filter((count) => count === 2);
         const triple = Object.values(cardcount).filter((count) => count === 3);
-        if (pair.length === 1 && triple.length === 3) {
+        if (pair.length === 1 && triple.length === 1) {
           type = "Full";
         }
         break;
@@ -63,12 +76,57 @@ function handType(hand) {
         type = "High";
     }
   }
-  // console.log({ type });
   return type;
 }
 
+// takes in the hand, it's current type, and how many jokers it has
+// returns a new type that should be the strongest it can be updated to be
+function findStrongestType(currtype, jokercount) {
+  if (currtype === "Five") return currtype;
+
+  let newtype = "";
+
+  switch (currtype) {
+    case "High": {
+      // J will be 1 - will go to one
+      newtype = "One";
+      break;
+    }
+    case "One": {
+      // J will be 1 or 2 - both go to three
+      newtype = "Three";
+      break;
+    }
+    case "Two": {
+      // J will be 1 or 2 - 1 goes to full, 2 goes to four
+      jokercount === 1 ? (newtype = "Full") : (newtype = "Four");
+      break;
+    }
+    case "Three": {
+      // J will be 1 or 3 - both will go to four
+      newtype = "Four";
+      break;
+    }
+    case "Full": {
+      // J will be 2 or 3 - both will go to five
+      newtype = "Five";
+      break;
+    }
+    case "Four": {
+      // J will be 1 or 4 - both will go to five
+      newtype = "Five";
+      break;
+    }
+    default:
+      break;
+  }
+
+  return newtype === "" ? currtype : newtype;
+}
+
 // return an object with all the hands sorted into their respective type
-function sortIntoBuckets(handbid) {
+// needs a boolean to determine if J are treated as wildcards or not
+function sortIntoBuckets(handbids, useWildcard) {
   const handTypes = {
     High: [],
     One: [],
@@ -79,9 +137,17 @@ function sortIntoBuckets(handbid) {
     Five: [],
   };
 
-  handbid.forEach((handbid) => {
+  handbids.forEach((handbid) => {
     const hand = handbid.split(" ")[0];
-    const handtype = handType(hand);
+    let handtype = handType(hand);
+    if (useWildcard) {
+      const jokercount = h.getUniqueKeyCounts(hand.split(""))["J"];
+      if (jokercount) {
+        // figure out what the actual highest value I can get is, knowing the number of Js in the hand
+        const newhandtype = findStrongestType(handtype, jokercount);
+        handtype = newhandtype;
+      }
+    }
     handTypes[handtype].push(handbid);
   });
 
@@ -89,7 +155,8 @@ function sortIntoBuckets(handbid) {
 }
 
 // takes a bucket object and returns the hands sorted in an array from lowest - highest
-function calcRanks(bucketlist) {
+// needs a boolean to determine if J are treated as wildcards or not
+function calcRanks(bucketlist, hasJokers) {
   const bucketkeys = Object.keys(bucketlist);
   const ranked = [];
 
@@ -113,26 +180,23 @@ function calcRanks(bucketlist) {
           if (matchIndex === undefined) {
             return 0;
           } else {
-            const hand1val = CARDS.indexOf(hand1.at(matchIndex));
-            const hand2val = CARDS.indexOf(hand2.at(matchIndex));
+            const cardValueRank = !hasJokers ? CARDS : CARDSJOKER;
+            const hand1val = cardValueRank.indexOf(hand1.at(matchIndex));
+            const hand2val = cardValueRank.indexOf(hand2.at(matchIndex));
 
             return hand1val > hand2val ? -1 : 1;
           }
         });
-        // console.log({ sortedHands });
-        hands.forEach((hand) => {
+        sortedHands.forEach((hand) => {
           const fullhand = buckethands.find((handbid) =>
             handbid.includes(hand)
           );
-          // console.log({ fullhand });
           innerrank.push(fullhand);
         });
-        // console.log({ innerrank });
         ranked.push(...innerrank);
       }
     }
   });
-  // console.log({ ranked });
   return ranked;
 }
 
@@ -147,13 +211,16 @@ function calcWinnings(sortedarr) {
 
 // part 1
 const parsed = initData.split("\n");
-const typeBuckets = sortIntoBuckets(parsed);
-const rankedHands = calcRanks(typeBuckets);
+const typeBuckets = sortIntoBuckets(parsed, false);
+const rankedHands = calcRanks(typeBuckets, false);
 const rankedWinnings = calcWinnings(rankedHands);
 console.log({ part1: rankedWinnings });
-// part 1 answer is too high; likely need to double check some of the sorting since I'm sure I didn't account fully for matches and longer arrays 249979530
 
 // part 2
+const typeBucketsWild = sortIntoBuckets(parsed, true);
+const rankedHandsWild = calcRanks(typeBucketsWild, true);
+const rankedWinningsWild = calcWinnings(rankedHandsWild);
+console.log({ part2: rankedWinningsWild });
 
 // tests
 if (import.meta.vitest) {
@@ -188,19 +255,48 @@ if (import.meta.vitest) {
     let sampleRanks;
 
     it("ranks the hands in the proper order", () => {
-      const sampleBuckets = sortIntoBuckets(sample);
-      // console.log({ sampleBuckets });
+      const sampleBuckets = sortIntoBuckets(sample, false);
       expect(sampleBuckets).toEqual(knownBuckets);
-      sampleRanks = calcRanks(sampleBuckets);
-      // console.log({ sampleRanks });
+      sampleRanks = calcRanks(sampleBuckets, false);
       expect(sampleRanks).toEqual(knownRanks);
     });
 
     it("gets the right winnings number", () => {
       const sampleWinnings = calcWinnings(sampleRanks);
-      // console.log({ sampleWinnings });
       expect(sampleWinnings).toEqual(knownWinnings);
     });
   });
-  // describe('part 2', () => {});
+
+  describe("part 2", () => {
+    const knownBuckets2 = {
+      High: [],
+      One: ["32T3K 765"],
+      Two: ["KK677 28"],
+      Three: [],
+      Full: [],
+      Four: ["T55J5 684", "KTJJT 220", "QQQJA 483"],
+      Five: [],
+    };
+    const knownRanks2 = [
+      "32T3K 765",
+      "KK677 28",
+      "T55J5 684",
+      "QQQJA 483",
+      "KTJJT 220",
+    ];
+    const knownWinnings2 = 5905;
+    let sampleRanks2;
+
+    it("ranks the hands correctly considering wildcards", () => {
+      const sampleBuckets2 = sortIntoBuckets(sample, true);
+      expect(sampleBuckets2).toEqual(knownBuckets2);
+      sampleRanks2 = calcRanks(sampleBuckets2, true);
+      expect(sampleRanks2).toEqual(knownRanks2);
+    });
+
+    it("gets the right winnings number", () => {
+      const sampleWinnings2 = calcWinnings(sampleRanks2);
+      expect(sampleWinnings2).toEqual(knownWinnings2);
+    });
+  });
 }
