@@ -37,3 +37,11 @@ export function getUniqueKeyCounts(keys) {
     return allKeys;
   }, {});
 }
+
+// rename the keys of an array of objects to the property name provided
+export function renameObjKeys(obj, newKey) {
+  return Object.keys(obj).forEach((oldKey) => {
+    obj[obj[oldKey][newKey]] = obj[oldKey];
+    delete obj[oldKey];
+  });
+}
